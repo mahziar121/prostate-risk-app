@@ -6,6 +6,8 @@ import streamlit as st
 
 APP_NAME = "Prostate Risk Navigator"
 APP_VERSION = "1.0.0"
+APP_AUTHOR = "Mahziar Khazaali, MD"
+APP_YEAR = "2025"
 
 st.set_page_config(
     page_title=APP_NAME,
@@ -329,6 +331,11 @@ with st.sidebar:
         "- NCCN risk category (including favorable vs unfavorable intermediate)\n"
         "- A compact summary line for documentation."
     )
+
+    st.markdown("---")
+    st.subheader("Designer")
+    st.write(APP_AUTHOR)
+
     st.markdown("---")
     st.subheader("Usage & Privacy")
     st.write(
@@ -830,3 +837,16 @@ def reset_form():
 
 st.button("Reset form for next patient", on_click=reset_form)
 
+# ============================================================
+# Footer with copyright
+# ============================================================
+
+st.markdown(
+    f"""
+    <div style="text-align:center; font-size:0.8rem; color:#888; padding-top:1.5rem;">
+        © {APP_YEAR} {APP_AUTHOR}. {APP_NAME}. All rights reserved.<br/>
+        This tool is provided for educational and decision-support purposes and is not a medical device.
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
