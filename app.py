@@ -1,6 +1,19 @@
 import streamlit as st
 
 # ============================================================
+# Page config / app metadata
+# ============================================================
+
+APP_NAME = "Prostate Risk Navigator"
+APP_VERSION = "1.0.0"
+
+st.set_page_config(
+    page_title=APP_NAME,
+    page_icon="🩺",
+    layout="wide",
+)
+
+# ============================================================
 # Constants / defaults
 # ============================================================
 
@@ -293,20 +306,56 @@ def classify_ajcc_stage(t_stage: str,
 
 
 # ============================================================
-# Streamlit UI
+# LAYOUT: header and sidebar
 # ============================================================
 
-st.title("Prostate Cancer TNM, Biopsy, AJCC Stage & NCCN Risk")
-
-st.write(
-    "- TNM follows **AJCC 8th edition**.\n"
-    "- Biopsy input uses a **standard 12-core template (A–L)** plus up to **3 targeted cores**.\n"
-    "- For each cancer core, enter Gleason patterns and % core involved.\n"
-    "- The tool derives the **highest Grade Group across all cores**, computes % positive systematic cores, "
-    "and assigns both **AJCC stage** and **NCCN risk group**."
+st.markdown(f"### {APP_NAME}")
+st.caption(
+    "Clinical decision-support tool for prostate cancer TNM (AJCC 8th), "
+    "AJCC prognostic stage, and NCCN risk category based on systematic and targeted biopsy data. "
+    "For clinician use only; not a substitute for independent medical judgment."
 )
 
-# ---------- TNM ----------
+with st.sidebar:
+    st.header(APP_NAME)
+    st.write(
+        "A prostate cancer staging and risk stratification helper that combines:\n"
+        "- Clinical TNM (AJCC 8th edition)\n"
+        "- Systematic 12-core biopsy\n"
+        "- Optional targeted cores\n"
+        "- PSA and Grade Group\n\n"
+        "Outputs:\n"
+        "- AJCC prognostic stage group\n"
+        "- NCCN risk category (including favorable vs unfavorable intermediate)\n"
+        "- A compact summary line for documentation."
+    )
+    st.markdown("---")
+    st.subheader("Usage & Privacy")
+    st.write(
+        "- Do **not** enter patient identifiers (name, MRN, DOB, etc.).\n"
+        "- Use de-identified clinical and pathology data only.\n"
+        "- This tool is for **educational and decision-support** use by clinicians."
+    )
+    st.markdown("---")
+    st.subheader("Version")
+    st.write(f"{APP_NAME} v{APP_VERSION}")
+
+st.markdown("---")
+
+with st.expander("How to use Prostate Risk Navigator", expanded=False):
+    st.markdown(
+        "1. Enter **clinical TNM** and **PSA**.\n"
+        "2. For each systematic core (A–L), select Benign / Cancer / ASAP and, if cancer, add Gleason and % involvement.\n"
+        "3. Optionally add up to 3 **targeted cores** (e.g., MRI lesions).\n"
+        "4. Click **“Classify AJCC Stage and NCCN Risk”** to see staging, risk group, and a summary line.\n"
+        "5. Use **“Download full report”** or copy the compact summary into your note.\n"
+        "6. Click **“Reset form for next patient”** between patients."
+    )
+
+# ============================================================
+# MAIN UI: TNM & PSA
+# ============================================================
+
 st.subheader("Clinical TNM (AJCC 8th ed.)")
 
 c1, c2, c3 = st.columns(3)
@@ -338,7 +387,6 @@ with c3:
     )
     st.caption(f"**M definition:** {M_STAGE_DEFINITIONS[m_stage]}")
 
-# ---------- PSA ----------
 st.subheader("PSA")
 
 psa = st.number_input(
@@ -349,12 +397,15 @@ psa = st.number_input(
     key="psa",
 )
 
-# ---------- Systematic 12-core biopsy ----------
+# ============================================================
+# Systematic 12-core biopsy
+# ============================================================
+
 st.subheader("Systematic 12-Core Biopsy (Core-Level Pathology)")
 
 st.caption(
-    "For each core, choose **Benign**, **Cancer**, or **ASAP** (atypical small acinar proliferation). "
-    "If **Cancer** is selected, enter Gleason primary/secondary patterns and the % of that core involved."
+    "For each core, choose **Benign**, **Cancer**, or **ASAP**. "
+    "If **Cancer** is selected, enter the Gleason primary/secondary patterns and the % of that core involved."
 )
 
 for code, label in CORE_SITES:
@@ -398,12 +449,15 @@ for code, label in CORE_SITES:
         elif biopsy_type == "ASAP":
             st.info(
                 "ASAP = atypical small acinar proliferation (suspicious but not diagnostic of cancer). "
-                "Guidelines typically recommend a repeat biopsy within 3–6 months."
+                "Repeat biopsy is typically recommended in 3–6 months."
             )
         else:
             st.caption("No cancer identified in this core.")
 
-# ---------- Targeted biopsy ----------
+# ============================================================
+# Targeted biopsy
+# ============================================================
+
 st.subheader("Targeted Biopsy Cores (Optional, e.g. MRI lesions)")
 
 st.caption(
@@ -465,8 +519,10 @@ for code, label in TARGETED_SITES:
             st.caption("Targeted core not obtained.")
 
 # ============================================================
-# Classification
+# Classification button
 # ============================================================
+
+st.markdown("---")
 
 if st.button("Classify AJCC Stage and NCCN Risk"):
     # Summarize systematic cores
@@ -560,12 +616,14 @@ if st.button("Classify AJCC Stage and NCCN Risk"):
     positive_systematic = len(systematic_cancer_cores)
     positive_targeted = len(targeted_cancer_cores)
     total_cancer_cores = positive_systematic + positive_targeted
-
     asap_count = len(systematic_asap_cores) + len(targeted_asap_cores)
 
     # No cancer anywhere
     if total_cancer_cores == 0:
-        percent_sys_pos = 100.0 * positive_systematic / TOTAL_SYSTEMATIC_CORES if TOTAL_SYSTEMATIC_CORES > 0 else 0.0
+        percent_sys_pos = (
+            100.0 * positive_systematic / TOTAL_SYSTEMATIC_CORES
+            if TOTAL_SYSTEMATIC_CORES > 0 else 0.0
+        )
 
         summary_line = (
             f"No adenocarcinoma identified on biopsy. Systematic cores with cancer: 0/"
@@ -690,7 +748,7 @@ if st.button("Classify AJCC Stage and NCCN Risk"):
 
         # Full text report (more detailed)
         lines = []
-        lines.append("Prostate cancer staging summary")
+        lines.append(f"{APP_NAME} – Prostate cancer staging summary")
         lines.append("")
         lines.append(f"TNM: {t_stage}, {n_stage}, {m_stage}")
         lines.append(f"PSA: {psa:.1f} ng/mL")
@@ -746,20 +804,23 @@ if st.button("Classify AJCC Stage and NCCN Risk"):
 # Reset button using a callback
 # ============================================================
 
-st.write("---")
+st.markdown("---")
 
 def reset_form():
+    # TNM + PSA
     st.session_state["t_stage"] = DEFAULT_T_STAGE
     st.session_state["n_stage"] = DEFAULT_N_STAGE
     st.session_state["m_stage"] = DEFAULT_M_STAGE
     st.session_state["psa"] = DEFAULT_PSA
 
+    # Systematic cores
     for code, _ in CORE_SITES:
         st.session_state[f"{code}_type"] = "Benign"
         st.session_state[f"{code}_p"] = DEFAULT_PRIMARY_PATTERN
         st.session_state[f"{code}_s"] = DEFAULT_SECONDARY_PATTERN
         st.session_state[f"{code}_pct"] = DEFAULT_CORE_PERCENT
 
+    # Targeted cores
     for code, _ in TARGETED_SITES:
         st.session_state[f"{code}_type"] = "Not taken"
         st.session_state[f"{code}_p"] = DEFAULT_PRIMARY_PATTERN
@@ -768,3 +829,4 @@ def reset_form():
         st.session_state[f"{code}_desc"] = ""
 
 st.button("Reset form for next patient", on_click=reset_form)
+
